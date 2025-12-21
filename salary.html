@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>优弧乒乓 | 薪资计算器 (修正版)</title>
+<style>
+    :root { --brand-orange: #FF6B00; --primary-blue: #0F172A; --bg-gray: #F3F4F6; }
+    body { font-family: -apple-system, "PingFang SC", sans-serif; background: var(--bg-gray); padding: 20px; max-width: 480px; margin: 0 auto; color: #333; }
+    
+    .header { text-align: center; margin-bottom: 20px; }
+    .header h2 { color: var(--primary-blue); margin: 0; font-size: 1.4rem; }
+    .header p { font-size: 0.85rem; color: #666; margin-top: 5px; }
+
+    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 15px; }
+    .card-title { font-weight: bold; border-left: 4px solid var(--brand-orange); padding-left: 10px; margin-bottom: 15px; font-size: 1rem; color: var(--primary-blue); }
+
+    .input-group { margin-bottom: 15px; position: relative; }
+    label { display: block; font-size: 0.9rem; color: #555; margin-bottom: 6px; font-weight: 500; }
+    input[type="number"], select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; outline: none; background: #FAFAFA; }
+    input:focus { border-color: var(--brand-orange); background: white; }
+    .unit { position: absolute; right: 15px; top: 38px; color: #999; font-size: 0.9rem; }
+
+    .checkbox-group { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
+    .toggle { position: relative; display: inline-block; width: 50px; height: 26px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+    .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--brand-orange); }
+    input:checked + .slider:before { transform: translateX(24px); }
+
+    .calc-btn { width: 100%; background: linear-gradient(90deg, #FF6B00, #FF8F00); color: white; border: none; padding: 16px; border-radius: 50px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3); }
+    .calc-btn:active { transform: scale(0.98); }
+
+    .result-box { display: none; background: var(--primary-blue); color: white; padding: 25px; border-radius: 16px; margin-top: 20px; animation: slideUp 0.3s ease; }
+    .total-label { font-size: 0.9rem; opacity: 0.8; text-align: center; }
+    .total-amount { font-size: 2.8rem; font-weight: 800; color: var(--brand-orange); text-align: center; margin: 5px 0 20px 0; }
+    
+    .detail-list { background: rgba(255,255,255,0.1); border-radius: 8px; padding: 15px; }
+    .detail-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; border-bottom: 1px dashed rgba(255,255,255,0.2); padding-bottom: 8px; }
+    .detail-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .item-name { opacity: 0.9; }
+    .item-val { font-weight: bold; }
+    .highlight { color: #FFD700; }
+    .sub-info { font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: -5px; margin-bottom: 5px; text-align: right;}
+
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+</style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>🏓 优弧薪资计算器</h2>
+        <p>更新：1万起提 + 全职比例</p>
+    </div>
+
+    <div class="card">
+        <div class="card-title">1. 岗位与底薪</div>
+        
+        <div class="input-group">
+            <label>基本底薪</label>
+            <input type="number" id="baseSalary" value="2500">
+            <span class="unit">元</span>
+        </div>
+
+        <div class="input-group">
+            <label>工龄</label>
+            <select id="workYears">
+                <option value="1">1年 (无工龄奖)</option>
+                <option value="2">2年 (+50元)</option>
+                <option value="3">3年 (+100元)</option>
+                <option value="4">4年 (+130元)</option>
+                <option value="5">5年 (+160元)</option>
+                <option value="10">10年及以上</option>
+            </select>
+        </div>
+
+        <div class="checkbox-group">
+            <label style="margin:0; font-weight:bold;">是否全勤 (+200元)</label>
+            <label class="toggle">
+                <input type="checkbox" id="isFullAtt" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">2. 业绩与消课</div>
+        
+        <div class="input-group">
+            <label>📊 本月总消课金额</label>
+            <input type="number" id="totalClassConsume" placeholder="例如：15000">
+            <span class="unit">元</span>
+        </div>
+
+        <div class="input-group">
+            <label>💰 提成等级 (超1万部分计算)</label>
+            <select id="classCommRate">
+                <option value="10">K2教练 (10%)</option>
+                <option value="12">K3教练 (12%)</option>
+                <option value="15">K4教练 (15%)</option>
+                <option value="0">无提成</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>🔄 续费总金额</label>
+            <input type="number" id="renewAmount" placeholder="输入金额">
+            <span class="unit">元</span>
+        </div>
+
+        <div class="input-group">
+            <label>🆕 新生试听转化储值</label>
+            <input type="number" id="newSignAmount" placeholder="输入金额">
+            <span class="unit">元</span>
+        </div>
+    </div>
+
+    <button class="calc-btn" onclick="calculateSalary()">计算工资</button>
+
+    <div class="result-box" id="resultArea">
+        <div class="total-label">本月预计实发</div>
+        <div class="total-amount">¥ <span id="finalTotal">0</span></div>
+        
+        <div class="detail-list">
+            <div class="detail-item">
+                <span class="item-name">底薪+全勤+工龄</span>
+                <span class="item-val" id="showBaseBlock">0</span>
+            </div>
+            
+            <div class="detail-item">
+                <span class="item-name">绩效奖励 (5000起)</span>
+                <span class="item-val highlight" id="showPerformance">0</span>
+            </div>
+            <div class="sub-info" id="perfDesc">每超1千+100</div>
+
+            <div class="detail-item">
+                <span class="item-name">消课提成 (1万起)</span>
+                <span class="item-val highlight" id="showClassComm">0</span>
+            </div>
+            <div class="sub-info" id="commDesc">超出部分 x 比例</div>
+
+            <div class="detail-item">
+                <span class="item-name">续费提成 (3%)</span>
+                <span class="item-val" id="showRenew">0</span>
+            </div>
+            <div class="detail-item">
+                <span class="item-name">试听转化 (3%)</span>
+                <span class="item-val" id="showNewSign">0</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculateSalary() {
+            // 1. 获取输入
+            let base = parseFloat(document.getElementById('baseSalary').value) || 0;
+            let consume = parseFloat(document.getElementById('totalClassConsume').value) || 0;
+            let renew = parseFloat(document.getElementById('renewAmount').value) || 0;
+            let newSign = parseFloat(document.getElementById('newSignAmount').value) || 0;
+            let workYear = parseInt(document.getElementById('workYears').value);
+            let fullAtt = document.getElementById('isFullAtt').checked;
+            let classRate = parseFloat(document.getElementById('classCommRate').value) / 100;
+
+            // 2. 工龄与全勤
+            let seniorityMoney = 0;
+            if (workYear == 2) seniorityMoney = 50;
+            else if (workYear == 3) seniorityMoney = 100;
+            else if (workYear >= 4) seniorityMoney = 130 + (workYear - 4) * 30;
+            
+            let attendanceMoney = fullAtt ? 200 : 0;
+            let fixedPart = base + seniorityMoney + attendanceMoney;
+
+            // 3. 绩效计算 (User: 5000起，每1000+100)
+            // 逻辑：消课 < 5000 没绩效。 >5000，取整千部分。
+            let performanceMoney = 0;
+            if (consume > 5000) {
+                let steps = Math.floor((consume - 5000) / 1000);
+                performanceMoney = steps * 100;
+            }
+
+            // 4. 消课提成计算 (User: 10000起算，超出部分 x 比例)
+            // 逻辑：消课 < 10000 没提成。 >10000，(总额 - 10000) * 比例
+            let classCommMoney = 0;
+            if (consume > 10000) {
+                classCommMoney = (consume - 10000) * classRate;
+            }
+
+            // 5. 其他提成
+            let renewMoney = renew * 0.03;
+            let newSignMoney = newSign * 0.03;
+
+            // 6. 总计
+            let total = fixedPart + performanceMoney + classCommMoney + renewMoney + newSignMoney;
+
+            // 7. 显示
+            document.getElementById('finalTotal').innerText = Math.floor(total);
+            document.getElementById('showBaseBlock').innerText = fixedPart;
+            document.getElementById('showPerformance').innerText = performanceMoney;
+            document.getElementById('showClassComm').innerText = Math.floor(classCommMoney);
+            document.getElementById('showRenew').innerText = Math.floor(renewMoney);
+            document.getElementById('showNewSign').innerText = Math.floor(newSignMoney);
+            
+            // 描述更新
+            document.getElementById('commDesc').innerText = `(${consume}-10000) x ${classRate*100}%`;
+
+            document.getElementById('resultArea').style.display = "block";
+        }
+    </script>
+</body>
+</html>
